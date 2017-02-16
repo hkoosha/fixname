@@ -1,0 +1,113 @@
+#!/usr/bin/python2
+
+import sys, re
+
+# Remove any character not being alphanumeric and an underscore.
+REMOVE_NON_ALPHA_NUM=True
+PRESERVE="_"
+
+# Replace these characters with the provided one.
+REPLACE = {
+ "&" : "_and_",
+ "I'm": "i_am",
+ "I'M": "i_am",
+ "i'm": "i_am",
+
+ "WE'RE": "we_are",
+ "we're": "we_are",
+ "We'Re": "we_are",
+ "We're": "we_are",
+
+ "it's": "it_is",
+ "IT'S": "it_is",
+ "It's": "it_is",
+}
+
+# Remove these charachters entirely.
+REMOVE = "\r\n"
+
+# Utility Func:
+# Find file suffix (file extension actully)
+def suf(s):
+  sx = s[s.rindex('.') + 1] if '.' in s else ""
+  return not (sx == "") \
+     and ('.' in s) \
+     and not (s.endswith('.')) \
+     and not (s == '.') \
+     and not (sx == '.') \
+     and not (len(sx) > 4) \
+     and (sx.isalnum())
+
+## Hah? I guss it was supposed to be a kind of string.strip()
+def LPopCrap(s, w):
+  if not w in s or len(s) == 1:
+    return s
+  if s[0] == w:
+    return s[1:]
+  return s
+
+## Hah? I guss it was supposed to be a kind of string.strip()
+def RPopCrap(s, w):
+  if not w in s or len(s) == 1:
+    return s
+  if s[len(s)-1] == w:
+    return s[:-1]
+  return s
+
+## Hah? I guss it was supposed to be a kind of string.strip()
+def popCrap(s, w):
+  s = LPopCrap(s, w)
+  s = RPopCrap(s, w)
+  return s
+
+# Camel case to snake case
+def fixCase(name):
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
+# Do the actual business here.
+def fuck(s):
+  # File has an extension?
+  hasSx = suf(s)
+  
+  # camelCase to snake_case.
+  s = fixCase(s)
+
+  # Remove bad characters.
+  for c in REMOVE:
+    s = s.replace(c, "")
+  
+  # Replace with replacees.
+  for c, w in REPLACE.items():
+    s = s.replace(c, w)
+
+  # Replace non-alphanum with underscore.
+  if REMOVE_NON_ALPHA_NUM:
+    for c in list(s):
+      if not c.isalnum() and not c in PRESERVE:
+        s = s.replace(c, '_')
+
+  s = s.strip().lower()
+
+  # Fix double underscore, if any.
+  while "__" in s:
+    s = s.replace("__", "_")  
+
+  # ???
+  s = popCrap(s, '.')
+  s = popCrap(s, '_')
+
+  # If the file had any suffix, append the suffix to it.
+  if not hasSx:
+    return s
+ 
+  sp = s.split('_')
+  last = sp.pop()
+  s = "_".join(sp)
+  return s + "." + last  
+  
+
+# Do your shit for every line piped into this script.
+for line in iter(sys.stdin.readline, ''):
+    print fuck(line)
+

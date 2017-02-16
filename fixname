@@ -1,0 +1,6 @@
+#!/bin/bash
+
+FIXNAME=$(echo "$1" | fixnamer)
+echo $FIXNAME
+\mv -n "$1" $FIXNAME
+
