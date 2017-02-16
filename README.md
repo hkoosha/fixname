@@ -19,12 +19,18 @@ mv: cannot move 'aDir/someFile.so' to 'a_dir/some_file.so': No such file or dire
 # Example:
 
 ```
+$> ls -l
+-rw-rw-r-- 1 user user   0 Feb 16 20:58 '[I'\''m rock-star-_ of Interneta] @we'\''re_so_cool_blablabla&i love you.jpg'
+
 $> fixname '[I'm rOcK-stAr_-_ of Internet!!] @we're_so_cool_blablabla.jpg'
 mv [I'm rock-star-_ of Internet!!] @we're_so_cool_blablabla.jpg \
-  im_rock_star_of_interneta_were_so_cool_blablabla.jpg
+  i_am_rock_star_of_interneta_we_are_so_cool_blablabla_and_i_love_you.jpg
 
 $> ls -l
--rw-rw-r-- 1 user user   0 Feb 16 20:51 im_rock_star_of_interneta_were_so_cool_blablabla.jpg
+-rw-rw-r-- 1 user user   0 Feb 16 20:59 i_am_rock_star_of_interneta_we_are_so_cool_blablabla_and_i_love_you.jpg
 ```
+
+I'm and We're are converted to 'i-am' and 'we-are' (a underscore actually, not dash).
+'&' is converted to 'and'.
 
 **If there is already a unix tool which fixes file names, please let me know**
