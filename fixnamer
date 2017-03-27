@@ -5,6 +5,10 @@ import sys, re
 # Remove any character not being alphanumeric and an underscore.
 REMOVE_NON_ALPHA_NUM=True
 PRESERVE="_"
+CRAZY = True
+CRAZY_SKIP_UNDERLINE = False
+
+CRAZY_EXT = ("mp3", "mp4", "wma", "wav", "flv", "mkv", "avi", "webm", "rmvb", "jpg", "jpeg", "ogg", "webm", "divx", "mlv")
 
 # Replace these characters with the provided one.
 REPLACE = {
@@ -63,7 +67,26 @@ def popCrap(s, w):
 # Camel case to snake case
 def fixCase(name):
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+    ret = re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+    return ret
+
+def crazyCase(name):
+    s = ""
+    isExtension = False
+    for e in enumerate(name):
+        i, t = e
+        if isExtension:
+            s += t
+        elif t == ".":
+            isExtension = True
+            s += "."
+        elif t == "_" and CRAZY_SKIP_UNDERLINE:
+            pass
+        elif i == 0 or name[i-1] == "_":
+            s += t.upper()
+        else:
+            s += t
+    return s
 
 # Do the actual business here.
 def fuck(s):
@@ -109,5 +132,12 @@ def fuck(s):
 
 # Do your shit for every line piped into this script.
 for line in iter(sys.stdin.readline, ''):
-    print fuck(line)
+    fck = fuck(line)
+    if (CRAZY and len(fck) > 4 and fck[-3:] in CRAZY_EXT) or (CRAZY and len(fck) > 5 and fck[-4:] in CRAZY_EXT):
+        fck = crazyCase(fck)
+    if len(fck) < 1:
+        print(line)
+    else:
+        print(fck)
+
 

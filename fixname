@@ -1,6 +1,12 @@
 #!/bin/bash
 
 FIXNAME=$(echo "$1" | fixnamer)
-echo $FIXNAME
-\mv -n "$1" $FIXNAME
+
+if [ -f "$FIXNAME" ]; then
+	echo "Exists::: $1 => $FIXNAME"
+else
+	echo "$FIXNAME"
+fi
+
+\mv -n "$1" "$FIXNAME"
 
