@@ -8,7 +8,7 @@ PRESERVE="_"
 CRAZY = True
 CRAZY_SKIP_UNDERLINE = False
 
-CRAZY_EXT = ("mp3", "mp4", "wma", "wav", "flv", "mkv", "avi", "webm", "rmvb", "jpg", "jpeg", "ogg", "webm", "divx", "mlv")
+CRAZY_EXT = ("mp3", "mp4", "wma", "wav", "flv", "mkv", "avi", "webm", "rmvb", "jpg", "jpeg", "ogg", "webm", "divx", "mlv", "srt")
 
 # Replace these characters with the provided one.
 REPLACE = {
@@ -89,7 +89,7 @@ def crazyCase(name):
     return s
 
 # Do the actual business here.
-def fuck(s):
+def fixfix(s):
   # File has an extension?
   hasSx = suf(s)
   
@@ -98,7 +98,7 @@ def fuck(s):
 
   # Remove bad characters.
   for c in REMOVE:
-    s = s.replace(c, "")
+    s = s.replace(c, "_")
   
   # Replace with replacees.
   for c, w in REPLACE.items():
@@ -130,14 +130,28 @@ def fuck(s):
   return s + "." + last  
   
 
-# Do your shit for every line piped into this script.
-for line in iter(sys.stdin.readline, ''):
-    fck = fuck(line)
-    if (CRAZY and len(fck) > 4 and fck[-3:] in CRAZY_EXT) or (CRAZY and len(fck) > 5 and fck[-4:] in CRAZY_EXT):
+def iscrazy(fck):
+    if not CRAZY:
+        return False
+    l = len(fck)
+    return (l > 4 and fck[-3:] in CRAZY_EXT) or (l > 5 and fck[-4:] in CRAZY_EXT)
+
+def main():
+    line = ""
+    ff = sys.stdin.readline()
+    while len(ff) > 0:
+        line += ff
+        ff = sys.stdin.readline()
+
+    fck = fixfix(line)
+    if iscrazy(fck):
         fck = crazyCase(fck)
+
     if len(fck) < 1:
         print(line)
     else:
         print(fck)
 
+if __name__ == "__main__":
+    main()
 

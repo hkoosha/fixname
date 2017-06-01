@@ -1,12 +1,20 @@
 #!/bin/bash
 
-FIXNAME=$(echo "$1" | fixnamer)
+set -u
+set -e
 
-if [ -f "$FIXNAME" ]; then
-	echo "Exists::: $1 => $FIXNAME"
+
+ERRP='::::::>>'
+ERRS='<<::::::'
+FIXNAME=$(echo "$1" | _fixnamer)
+
+if [[ "${1}" == "$FIXNAME" ]]; then
+	echo "${ERRP}Skip${ERRS} $1"
+elif [[ -f "$FIXNAME" ]]; then
+	echo "${ERRP}Target Exists${ERRS} $1 => $FIXNAME"
 else
 	echo "$FIXNAME"
+	\mv -n "$1" "$FIXNAME"
 fi
 
-\mv -n "$1" "$FIXNAME"
 
