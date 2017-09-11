@@ -149,6 +149,8 @@ def main():
 
     if len(fck) < 1:
         print(line)
+    if fck[0] == ".":
+        print(line)
     else:
         print(fck)
 
