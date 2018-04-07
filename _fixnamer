@@ -1,38 +1,73 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 
 import sys, re
 
-# Remove any character not being alphanumeric and an underscore.
-REMOVE_NON_ALPHA_NUM=True
-PRESERVE="_"
-CRAZY = True
-CRAZY_SKIP_UNDERLINE = False
-
-CRAZY_EXT = ("mp3", "mp4", "wma", "wav", "flv", "mkv", "avi", "webm", "rmvb", "jpg", "jpeg", "ogg", "webm", "divx", "mlv", "srt")
-
-# Replace these characters with the provided one.
-REPLACE = {
- "&" : "_and_",
- "I'm": "i_am",
- "I'M": "i_am",
- "i'm": "i_am",
-
- "WE'RE": "we_are",
- "we're": "we_are",
- "We'Re": "we_are",
- "We're": "we_are",
-
- "it's": "it_is",
- "IT'S": "it_is",
- "It's": "it_is",
-}
-
-# Remove these charachters entirely.
+REMOVE_NON_ALPHA_NUM = True
+PRESERVE = "_"
 REMOVE = "\r\n"
 
-# Utility Func:
-# Find file suffix (file extension actully)
-def suf(s):
+MEDIA_SKIP_UNDERLINE = False
+MEDIA_EXT = (
+  "mp3", "mp4", "wma", "wav", "flv", "mkv", 
+  "avi", "webm", "rmvb", "jpg", "jpeg", "ogg",
+  "webm", "divx", "mlv", "srt", "png", "tiff",
+  "3gp", "gif"
+)
+
+REPLACE = {
+ " ": "_",
+ "&" : " and ",
+
+ "i'm": "i am",
+ "we're": "we are",
+ "you're": "you are",
+ "they're": "they are",
+ "he's": "he is",
+ "she's": "she is",
+ "it's": "it is",
+
+ "i'll": "i will",   
+ "you'll": "you will",   
+ "we'll": "we will",   
+ "they'll": "they will",   
+ "he'll": "he will",   
+ "she'll": "she will",   
+ "it'll": "it will",   
+
+ "let's": "lets",   
+}
+
+TRANSLITERATE_FA = {
+    "ا" : "a", "آ" : "a", "إ" : "a", "أ" : "a",
+    "ب" : "b", "پ" : "p", "ت" : "t", "ث" : "s",
+    "ج" : "j", "چ" : "ch", "ح" : "h", "خ" : "kh",
+    "د" : "d", "ذ" : "z", "ر" : "r", "ز" : "z", "ژ" : "j",
+    "س" : "s", "ش" : "sh", "ص" : "s", "ض" : "z",
+    "ط" : "t", "ظ" : "z", "ع" : "a", "غ" : "gh",
+    "ف" : "f", "ق" : "gh", "ک" : "k", "گ" : "g",
+    "ل" : "l", "م" : "m", "ن" : "n", "و" : "v",
+    "ه" : "h", "ی" : "y",
+    "ؤ": "o", "ئ": "y", "ي": "y", "ة": "h", "ك": "k",
+}
+
+TRANSLITERATE = (TRANSLITERATE_FA, )
+
+
+# ______________________________________________________________________________
+
+def isAscii(s):
+    return len(s) == len(s.encode())
+
+def isAlnum(s):
+    return isAscii(s) and s.isalnum()
+
+def fixDoubleScore(s):
+  while "__" in s:
+    s = s.replace("__", "_")  
+  return s
+
+
+def hasSuffix(s):
   sx = s[s.rindex('.') + 1] if '.' in s else ""
   return not (sx == "") \
      and ('.' in s) \
@@ -42,118 +77,112 @@ def suf(s):
      and not (len(sx) > 4) \
      and (sx.isalnum())
 
-## Hah? I guss it was supposed to be a kind of string.strip()
-def LPopCrap(s, w):
-  if not w in s or len(s) == 1:
-    return s
-  if s[0] == w:
-    return s[1:]
+def trim(s, ws):
+  for w in ws:
+      if w in s and len(s) > 1 and s[0] == w:
+        s = s[1:]
+      if w in s and len(s) > 1 and s[len(s)-1] == w:
+        s = s[:-1]
   return s
 
-## Hah? I guss it was supposed to be a kind of string.strip()
-def RPopCrap(s, w):
-  if not w in s or len(s) == 1:
-    return s
-  if s[len(s)-1] == w:
-    return s[:-1]
-  return s
-
-## Hah? I guss it was supposed to be a kind of string.strip()
-def popCrap(s, w):
-  s = LPopCrap(s, w)
-  s = RPopCrap(s, w)
-  return s
-
-# Camel case to snake case
-def fixCase(name):
+def toSnakeCase(name):
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     ret = re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
     return ret
 
-def crazyCase(name):
-    s = ""
-    isExtension = False
-    for e in enumerate(name):
-        i, t = e
-        if isExtension:
-            s += t
-        elif t == ".":
-            isExtension = True
-            s += "."
-        elif t == "_" and CRAZY_SKIP_UNDERLINE:
-            pass
-        elif i == 0 or name[i-1] == "_":
-            s += t.upper()
-        else:
-            s += t
-    return s
+# ______________________________________________________________________________
 
-# Do the actual business here.
-def fixfix(s):
-  # File has an extension?
-  hasSx = suf(s)
-  
-  # camelCase to snake_case.
-  s = fixCase(s)
+def toMediaCase(toFix):
+  if not (len(toFix) > 4 and toFix[-3:] in MEDIA_EXT) and \
+     not (len(toFix) > 5 and toFix[-4:] in MEDIA_EXT):
+       return toFix
+  s = ""
+  isExtension = False
+  for e in enumerate(toFix):
+    i, t = e
+    if isExtension:
+      s += t
+    elif t == ".":
+      isExtension = True
+      s += "."
+    elif t == "_" and MEDIA_SKIP_UNDERLINE:
+      pass
+    elif i == 0 or toFix[i-1] == "_":
+      s += t.upper()
+    else:
+      s += t
+  return s
 
-  # Remove bad characters.
+def remove(s):
   for c in REMOVE:
     s = s.replace(c, "_")
-  
-  # Replace with replacees.
+  return s
+
+def replace(s):
   for c, w in REPLACE.items():
     s = s.replace(c, w)
+  return s
 
-  # Replace non-alphanum with underscore.
-  if REMOVE_NON_ALPHA_NUM:
-    for c in list(s):
-      if not c.isalnum() and not c in PRESERVE:
-        s = s.replace(c, '_')
-
-  s = s.strip().lower()
-
-  # Fix double underscore, if any.
-  while "__" in s:
-    s = s.replace("__", "_")  
-
-  # ???
-  s = popCrap(s, '.')
-  s = popCrap(s, '_')
-
-  # If the file had any suffix, append the suffix to it.
-  if not hasSx:
+def removeNonAscii(s):
+  if not REMOVE_NON_ALPHA_NUM:
     return s
- 
-  sp = s.split('_')
-  last = sp.pop()
-  s = "_".join(sp)
-  return s + "." + last  
-  
+  for c in list(s):
+    if not all(ord(cc) < 128 for cc in c) and not c in PRESERVE:
+      s = s.replace(c, '_')
+  return s
 
-def iscrazy(fck):
-    if not CRAZY:
-        return False
-    l = len(fck)
-    return (l > 4 and fck[-3:] in CRAZY_EXT) or (l > 5 and fck[-4:] in CRAZY_EXT)
+def transliterate(s):
+  for i in TRANSLITERATE:
+    for fromChar in i:
+      s = s.replace(fromChar, i[fromChar])
+  return s
+
+def appendSuffix(orig, s):
+  sx = s[s.rindex('.') + 1] if '.' in s else ""
+  if sx == "" or \
+     sx == '.' or \
+     len(sx) > 4 or \
+     not isAscii(sx) or \
+     '.' not in s or \
+     s.endswith('.') or \
+     s == '.':
+    return s
+  sp = s.split('_')
+  last = sp.pop().split('.')
+  ext = last.pop()
+  return "_".join(sp) + "_".join(last) + "." + ext
+
+# ______________________________________________________________________________
+
+def fixName(name):
+  s = name
+  s = toSnakeCase(s)
+  s = remove(s)
+  s = s.strip().lower()
+  s = replace(s)
+  s = transliterate(s)
+  s = removeNonAscii(s)
+  s = fixDoubleScore(s)
+  s = trim(s, ('.', '_'))
+  s = appendSuffix(name, s)
+  return s
+  
 
 def main():
     line = ""
     ff = sys.stdin.readline()
     while len(ff) > 0:
-        line += ff
-        ff = sys.stdin.readline()
+      line += ff
+      ff = sys.stdin.readline()
 
-    fck = fixfix(line)
-    if iscrazy(fck):
-        fck = crazyCase(fck)
+    fixed = fixName(line)
+    fixed = toMediaCase(fixed)
 
-    if len(fck) < 1:
-        print(line)
-    if fck[0] == ".":
-        print(line)
+    if len(fixed) < 1 or fixed[0] == ".": 
+      print(line)
     else:
-        print(fck)
+      print(fixed)
 
 if __name__ == "__main__":
-    main()
+  main()
 
